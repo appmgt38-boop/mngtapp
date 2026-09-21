@@ -258,6 +258,9 @@ export function SystemConfiguration() {
           <TabsTrigger value="types">
             <Tags className="size-4" aria-hidden /> School types
           </TabsTrigger>
+          <TabsTrigger value="classes">
+            <Layers className="size-4" aria-hidden /> Classes
+          </TabsTrigger>
           <TabsTrigger value="subjects">Subjects</TabsTrigger>
           <TabsTrigger value="policy">
             <Settings2 className="size-4" aria-hidden /> Tenant policy
@@ -277,9 +280,23 @@ export function SystemConfiguration() {
             schools={schools}
             busy={busy}
             onCreate={(payload) => run(() => addSchool({ data: payload }), "School provisioned")}
+            onUpdate={(payload) => run(() => editSchool({ data: payload }), "School updated")}
             onDelete={(id) => run(() => removeSchool({ data: { id } }), "School removed")}
           />
         </TabsContent>
+
+        <TabsContent value="classes" className="mt-6">
+          <ClassesSection
+            school={school ?? null}
+            levels={levels}
+            classes={schoolClasses}
+            busy={busy}
+            onCreate={(payload) => run(() => addClass({ data: payload }), "Class added")}
+            onUpdate={(payload) => run(() => editClass({ data: payload }), "Class updated")}
+            onDelete={(id) => run(() => removeClass({ data: { id } }), "Class removed")}
+          />
+        </TabsContent>
+
 
         <TabsContent value="levels" className="mt-6">
           <LevelsSection
