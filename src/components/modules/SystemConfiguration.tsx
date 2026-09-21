@@ -204,6 +204,10 @@ export function SystemConfiguration() {
     () => subjects.filter((s) => s.school_id === schoolId),
     [subjects, schoolId],
   );
+  const schoolClasses = useMemo(
+    () => classes.filter((c) => c.school_id === schoolId),
+    [classes, schoolId],
+  );
   const schoolSettings = settings.find((s) => s.school_id === schoolId) ?? null;
   const schoolBranding = branding.find((b) => b.school_id === schoolId) ?? null;
   const schoolNumbering = numbering.find((n) => n.school_id === schoolId) ?? null;
