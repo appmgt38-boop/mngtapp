@@ -7,10 +7,12 @@ import {
   educationLevelSchema,
   idSchema,
   numberingSchema,
+  schoolClassSchema,
   schoolSchema,
   schoolTypeSchema,
   subjectSchema,
   tenantSettingsSchema,
+  updateSchoolClassSchema,
   updateSchoolSchema,
 } from "@/lib/config.schemas";
 import {
