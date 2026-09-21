@@ -208,7 +208,7 @@ export function AdmissionsManagement() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All classes</SelectItem>
-              {ADMISSION_CLASSES.map((c) => (
+              {classOptions.map((c) => (
                 <SelectItem key={c} value={c}>
                   {c}
                 </SelectItem>
