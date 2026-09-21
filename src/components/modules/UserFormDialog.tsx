@@ -124,6 +124,7 @@ function fromAccount(a: AccountRow): UserFormValues {
 }
 
 import { useTenantOptions } from "@/hooks/useTenantOptions";
+import { useSchoolClasses } from "@/hooks/useSchoolClasses";
 
 export function UserFormDialog({
   open,
@@ -144,6 +145,8 @@ export function UserFormDialog({
 }) {
   const editing = Boolean(account);
   const { positions, departments } = useTenantOptions();
+  const { names: configuredClasses } = useSchoolClasses();
+  const classOptions = configuredClasses.length ? configuredClasses : CLASSES;
   const [form, setForm] = useState<UserFormValues>(emptyForm());
   const [error, setError] = useState<string | null>(null);
 
