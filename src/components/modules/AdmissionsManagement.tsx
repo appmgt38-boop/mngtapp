@@ -634,10 +634,10 @@ function ClassTeachers({
           <Label>Class</Label>
           <Select value={className} onValueChange={setClassName}>
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue placeholder="Select class" />
             </SelectTrigger>
             <SelectContent>
-              {ADMISSION_CLASSES.map((c) => (
+              {classOptions.map((c) => (
                 <SelectItem key={c} value={c}>
                   {c}
                 </SelectItem>
