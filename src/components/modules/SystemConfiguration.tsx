@@ -518,10 +518,23 @@ function SchoolsSection({
             ))}
           </div>
         </Field>
-        <div className="sm:col-span-3">
+        <div className="flex gap-2 sm:col-span-3">
           <Button type="submit" disabled={busy}>
-            <Plus className="size-4" aria-hidden /> Provision school
+            {editingId ? (
+              <>
+                <Save className="size-4" aria-hidden /> Save changes
+              </>
+            ) : (
+              <>
+                <Plus className="size-4" aria-hidden /> Provision school
+              </>
+            )}
           </Button>
+          {editingId ? (
+            <Button type="button" variant="ghost" onClick={reset} disabled={busy}>
+              <X className="size-4" aria-hidden /> Cancel
+            </Button>
+          ) : null}
         </div>
       </form>
 
