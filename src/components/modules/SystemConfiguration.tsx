@@ -46,6 +46,7 @@ import {
   type EducationLevel,
   type School,
   type SchoolBranding,
+  type SchoolClass,
   type SchoolType,
   type Subject,
   type TenantSettings,
@@ -53,6 +54,7 @@ import {
 import {
   brandingSchema,
   educationLevelSchema,
+  schoolClassSchema,
   schoolSchema,
   schoolTypeSchema,
   subjectSchema,
@@ -61,14 +63,18 @@ import {
 import {
   createEducationLevel,
   createSchool,
+  createSchoolClass,
   createSchoolType,
   createSubject,
   deleteSchool,
+  deleteSchoolClass,
   deleteSubject,
   getConfiguration,
   saveBranding,
   saveNumberingSettings,
   saveTenantSettings,
+  updateSchool,
+  updateSchoolClass,
 } from "@/lib/config.functions";
 import { NumberingSection } from "@/components/modules/NumberingSection";
 import type { NumberingSettings } from "@/lib/numbering";
