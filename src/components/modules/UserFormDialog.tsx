@@ -313,7 +313,7 @@ export function UserFormDialog({
                     <SelectValue placeholder="Select class" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CLASSES.map((c) => (
+                    {classOptions.map((c) => (
                       <SelectItem key={c} value={c}>
                         {c}
                       </SelectItem>
