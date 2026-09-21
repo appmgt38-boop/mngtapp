@@ -364,6 +364,7 @@ function SchoolsSection({
   schools,
   busy,
   onCreate,
+  onUpdate,
   onDelete,
 }: {
   types: SchoolType[];
@@ -371,9 +372,11 @@ function SchoolsSection({
   schools: School[];
   busy: boolean;
   onCreate: (payload: Record<string, unknown>) => Promise<boolean>;
+  onUpdate: (payload: Record<string, unknown>) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
 }) {
   const [form, setForm] = useState({ ...EMPTY_SCHOOL });
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Errors>({});
 
   const set = (key: keyof typeof EMPTY_SCHOOL, value: unknown) =>
@@ -385,21 +388,56 @@ function SchoolsSection({
       levelCodes: on ? [...f.levelCodes, code] : f.levelCodes.filter((c) => c !== code),
     }));
 
+  const reset = () => {
+    setEditingId(null);
+    setErrors({});
+    setForm({ ...EMPTY_SCHOOL });
+  };
+
+  const startEdit = (s: School) => {
+    setEditingId(s.id);
+    setErrors({});
+    setForm({
+      name: s.name,
+      code: s.code,
+      country: s.country,
+      region: s.region ?? "",
+      district: s.district ?? "",
+      town: s.town ?? "",
+      community: s.community ?? "",
+      postalAddress: s.postal_address ?? "",
+      gpsAddress: s.gps_address ?? "",
+      timezone: s.timezone,
+      currency: s.currency,
+      locale: s.locale,
+      typeCode: s.type_code,
+      levelCodes: [...s.level_codes],
+    });
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const { data, errors: issues } = validate(schoolSchema, form);
     setErrors(issues);
     if (!data) return;
-    if (await onCreate(data as unknown as Record<string, unknown>)) setForm({ ...EMPTY_SCHOOL });
+    const ok = editingId
+      ? await onUpdate({ ...(data as unknown as Record<string, unknown>), id: editingId })
+      : await onCreate(data as unknown as Record<string, unknown>);
+    if (ok) reset();
   };
 
   return (
     <div className="space-y-8">
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-3">
         <div className="sm:col-span-3">
-          <h3 className="text-base font-semibold">Provision a school</h3>
+          <h3 className="text-base font-semibold">
+            {editingId ? "Update school details" : "Provision a school"}
+          </h3>
           <p className="text-sm text-muted-foreground">
-            Every record in the system is scoped to a school, so tenants scale without code changes.
+            {editingId
+              ? "Changes apply everywhere the school is used — classes, subjects, policy, branding and numbering stay attached."
+              : "Every record in the system is scoped to a school, so tenants scale without code changes."}
           </p>
         </div>
         <Field label="School name" error={errors["name"]}>
