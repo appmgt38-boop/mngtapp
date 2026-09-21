@@ -36,6 +36,7 @@ import {
   saveClassTeacher,
   updateAdmission,
 } from "@/lib/admissions.functions";
+import { useSchoolClasses } from "@/hooks/useSchoolClasses";
 
 type Row = Record<string, unknown>;
 
