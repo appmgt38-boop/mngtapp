@@ -390,3 +390,98 @@ export const getTenantOptions = createServerFn({ method: "GET" })
       scheduleTypes: data?.schedule_types?.length ? data.schedule_types : DEFAULT_SCHEDULE_TYPES,
     };
   });
+
+/* ------------------------------ classes ------------------------------ */
+
+/**
+ * Classes belong to an education level the school actually offers, so the
+ * catalogue can never drift from what was chosen when the school was
+ * provisioned.
+ */
+export const createSchoolClass = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => schoolClassSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.supabase, context.userId);
+    const { supabase } = context;
+
+    const { data: school } = await supabase
+      .from("schools")
+      .select("id, level_codes")
+      .eq("id", data.schoolId)
+      .maybeSingle();
+    if (!school) throw new Error("Unknown school.");
+    if (!(school.level_codes ?? []).includes(data.levelCode)) {
+      throw new Error("That education level is not offered by this school.");
+    }
+
+    const { error } = await supabase.from("school_classes").insert({
+      school_id: data.schoolId,
+      level_code: data.levelCode,
+      name: data.name,
+      sort_order: data.sortOrder ?? 1,
+      active: data.active ?? true,
+    });
+    if (error) {
+      throw new Error(
+        error.code === "23505" ? "That class already exists for this school." : error.message,
+      );
+    }
+    await logAudit(supabase, context.userId, {
+      action: "class_created",
+      description: `Added class ${data.name}`,
+      details: { schoolId: data.schoolId, levelCode: data.levelCode },
+    });
+    return { ok: true };
+  });
+
+export const updateSchoolClass = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => updateSchoolClassSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.supabase, context.userId);
+    const { id, ...rest } = data;
+    const { error } = await context.supabase
+      .from("school_classes")
+      .update({
+        ...(rest.name !== undefined ? { name: rest.name } : {}),
+        ...(rest.levelCode !== undefined ? { level_code: rest.levelCode } : {}),
+        ...(rest.sortOrder !== undefined ? { sort_order: rest.sortOrder } : {}),
+        ...(rest.active !== undefined ? { active: rest.active } : {}),
+      })
+      .eq("id", id);
+    if (error) {
+      throw new Error(
+        error.code === "23505" ? "That class already exists for this school." : error.message,
+      );
+    }
+    return { ok: true };
+  });
+
+export const deleteSchoolClass = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => idSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.supabase, context.userId);
+    const { error } = await context.supabase.from("school_classes").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Active classes, readable by any signed-in user so every module stays in sync. */
+export const getSchoolClasses = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("school_classes")
+      .select("id, school_id, level_code, name, sort_order")
+      .eq("active", true)
+      .order("sort_order", { ascending: true });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((c) => ({
+      id: c.id,
+      schoolId: c.school_id,
+      levelCode: c.level_code,
+      name: c.name,
+    }));
+  });
