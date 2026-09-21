@@ -606,7 +606,9 @@ function ClassTeachers({
     teacherPhone: string;
   }) => Promise<void>;
 }) {
-  const [className, setClassName] = useState<string>(ADMISSION_CLASSES[0]);
+  const { names: configuredClasses } = useSchoolClasses();
+  const classOptions = configuredClasses.length ? configuredClasses : ADMISSION_CLASSES;
+  const [className, setClassName] = useState<string>("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
