@@ -553,7 +553,10 @@ function AdmissionDialog({
                     <SelectValue placeholder={`Select ${f.label.toLowerCase()}`} />
                   </SelectTrigger>
                   <SelectContent>
-                    {(f.options ?? []).map((o) => (
+                    {(f.name === "classAdmitted" && classOptions.length
+                      ? classOptions
+                      : (f.options ?? [])
+                    ).map((o) => (
                       <SelectItem key={o} value={o}>
                         {o}
                       </SelectItem>
