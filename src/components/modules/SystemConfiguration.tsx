@@ -592,6 +592,183 @@ function SchoolsSection({
   );
 }
 
+function ClassesSection({
+  school,
+  levels,
+  classes,
+  busy,
+  onCreate,
+  onUpdate,
+  onDelete,
+}: {
+  school: School | null;
+  levels: EducationLevel[];
+  classes: SchoolClass[];
+  busy: boolean;
+  onCreate: (payload: Record<string, unknown>) => Promise<boolean>;
+  onUpdate: (payload: Record<string, unknown>) => Promise<boolean>;
+  onDelete: (id: string) => Promise<boolean>;
+}) {
+  const empty = { levelCode: "", name: "", sortOrder: "1" };
+  const [form, setForm] = useState(empty);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Errors>({});
+
+  if (!school) {
+    return <p className="text-sm text-muted-foreground">Provision a school first.</p>;
+  }
+
+  const offered = levels.filter((l) => school.level_codes.includes(l.code));
+
+  const reset = () => {
+    setEditingId(null);
+    setErrors({});
+    setForm(empty);
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { data, errors: issues } = validate(schoolClassSchema, {
+      schoolId: school.id,
+      levelCode: form.levelCode,
+      name: form.name,
+      sortOrder: Number(form.sortOrder || 1),
+      active: true,
+    });
+    setErrors(issues);
+    if (!data) return;
+    const payload = data as unknown as Record<string, unknown>;
+    const ok = editingId
+      ? await onUpdate({
+          id: editingId,
+          levelCode: payload["levelCode"],
+          name: payload["name"],
+          sortOrder: payload["sortOrder"],
+        })
+      : await onCreate(payload);
+    if (ok) reset();
+  };
+
+  return (
+    <div className="space-y-8">
+      <form onSubmit={submit} className="grid gap-4 sm:grid-cols-4">
+        <div className="sm:col-span-4">
+          <h3 className="text-base font-semibold">Classes at {school.name}</h3>
+          <p className="text-sm text-muted-foreground">
+            Classes sit under the education levels chosen when the school was provisioned, and are the
+            list every module uses — admissions, students, attendance and assessments.
+          </p>
+        </div>
+        <Field label="Education level" error={errors["levelCode"]}>
+          <Select value={form.levelCode} onValueChange={(v) => setForm({ ...form, levelCode: v })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select level" />
+            </SelectTrigger>
+            <SelectContent>
+              {offered.map((l) => (
+                <SelectItem key={l.code} value={l.code}>
+                  {l.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field label="Class name" error={errors["name"]}>
+          <Input
+            placeholder="Basic 1"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+        </Field>
+        <Field label="Order" error={errors["sortOrder"]}>
+          <Input
+            type="number"
+            min={1}
+            value={form.sortOrder}
+            onChange={(e) => setForm({ ...form, sortOrder: e.target.value })}
+          />
+        </Field>
+        <div className="flex items-end gap-2">
+          <Button type="submit" disabled={busy}>
+            {editingId ? (
+              <>
+                <Save className="size-4" aria-hidden /> Save
+              </>
+            ) : (
+              <>
+                <Plus className="size-4" aria-hidden /> Add class
+              </>
+            )}
+          </Button>
+          {editingId ? (
+            <Button type="button" variant="ghost" onClick={reset} disabled={busy}>
+              <X className="size-4" aria-hidden /> Cancel
+            </Button>
+          ) : null}
+        </div>
+      </form>
+
+      <div className="space-y-6">
+        {offered.map((l) => {
+          const rows = classes
+            .filter((c) => c.level_code === l.code)
+            .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
+          return (
+            <section key={l.code} className="space-y-2">
+              <h4 className="text-sm font-semibold">{l.name}</h4>
+              {rows.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No classes added for this level yet.</p>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {rows.map((c) => (
+                    <article
+                      key={c.id}
+                      className="flex items-center justify-between gap-2 rounded-xl border border-border p-3"
+                    >
+                      <span className="text-sm font-medium">{c.name}</span>
+                      <span className="flex gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label={`Edit ${c.name}`}
+                          disabled={busy}
+                          onClick={() => {
+                            setEditingId(c.id);
+                            setErrors({});
+                            setForm({
+                              levelCode: c.level_code,
+                              name: c.name,
+                              sortOrder: String(c.sort_order),
+                            });
+                          }}
+                        >
+                          <Pencil className="size-4" aria-hidden />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label={`Remove ${c.name}`}
+                          disabled={busy}
+                          onClick={() => {
+                            if (window.confirm(`Remove ${c.name}?`)) void onDelete(c.id);
+                          }}
+                        >
+                          <Trash2 className="size-4 text-destructive" aria-hidden />
+                        </Button>
+                      </span>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+
 function LevelsSection({
   levels,
   busy,
