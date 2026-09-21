@@ -504,6 +504,8 @@ function AdmissionDialog({
     setForm(editing ? fromRow(editing) : emptyForm());
   }, [open, editing]);
 
+  const { names: configuredClasses } = useSchoolClasses();
+  const classOptions = configuredClasses;
   const tab = ADMISSION_TABS[step]!;
   const visible = tab.fields.filter(
     (f) => !f.conditional || form[f.conditional.field] === f.conditional.value,
