@@ -31,7 +31,7 @@ export const getConfiguration = createServerFn({ method: "GET" })
     await assertSuperAdmin(context.supabase, context.userId);
     const { supabase } = context;
 
-    const [types, levels, schools, subjects, settings, branding, numbering] = await Promise.all([
+    const [types, levels, schools, subjects, settings, branding, numbering, classes] = await Promise.all([
       supabase.from("school_types").select("*").order("name"),
       supabase.from("education_levels").select("*").order("sort_order"),
       supabase.from("schools").select("*").order("name"),
@@ -39,11 +39,12 @@ export const getConfiguration = createServerFn({ method: "GET" })
       supabase.from("tenant_settings").select("*"),
       supabase.from("school_branding").select("*"),
       supabase.from("numbering_settings").select("*"),
+      supabase.from("school_classes").select("*").order("sort_order"),
     ]);
 
     const failure =
       types.error ?? levels.error ?? schools.error ?? subjects.error ?? settings.error ?? branding.error ??
-      numbering.error;
+      numbering.error ?? classes.error;
     if (failure) throw new Error(failure.message);
 
     return {
@@ -54,6 +55,7 @@ export const getConfiguration = createServerFn({ method: "GET" })
       settings: (settings.data ?? []).map((s) => ({ ...s, features: mergedFeatures(s.features as never) })),
       branding: branding.data ?? [],
       numbering: numbering.data ?? [],
+      classes: classes.data ?? [],
     };
   });
 
