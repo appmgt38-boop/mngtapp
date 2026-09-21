@@ -36,6 +36,7 @@ import {
   saveClassTeacher,
   updateAdmission,
 } from "@/lib/admissions.functions";
+import { useSchoolClasses } from "@/hooks/useSchoolClasses";
 
 type Row = Record<string, unknown>;
 
@@ -95,6 +96,9 @@ export function AdmissionsManagement() {
   useEffect(() => {
     void refresh();
   }, []);
+
+  const { names: configuredClasses } = useSchoolClasses();
+  const classOptions = configuredClasses.length ? configuredClasses : ADMISSION_CLASSES;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -204,7 +208,7 @@ export function AdmissionsManagement() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All classes</SelectItem>
-              {ADMISSION_CLASSES.map((c) => (
+              {classOptions.map((c) => (
                 <SelectItem key={c} value={c}>
                   {c}
                 </SelectItem>
@@ -504,6 +508,8 @@ function AdmissionDialog({
     setForm(editing ? fromRow(editing) : emptyForm());
   }, [open, editing]);
 
+  const { names: configuredClasses } = useSchoolClasses();
+  const classOptions = configuredClasses;
   const tab = ADMISSION_TABS[step]!;
   const visible = tab.fields.filter(
     (f) => !f.conditional || form[f.conditional.field] === f.conditional.value,
@@ -553,7 +559,10 @@ function AdmissionDialog({
                     <SelectValue placeholder={`Select ${f.label.toLowerCase()}`} />
                   </SelectTrigger>
                   <SelectContent>
-                    {(f.options ?? []).map((o) => (
+                    {(f.name === "classAdmitted" && classOptions.length
+                      ? classOptions
+                      : (f.options ?? [])
+                    ).map((o) => (
                       <SelectItem key={o} value={o}>
                         {o}
                       </SelectItem>
@@ -601,7 +610,9 @@ function ClassTeachers({
     teacherPhone: string;
   }) => Promise<void>;
 }) {
-  const [className, setClassName] = useState<string>(ADMISSION_CLASSES[0]);
+  const { names: configuredClasses } = useSchoolClasses();
+  const classOptions = configuredClasses.length ? configuredClasses : ADMISSION_CLASSES;
+  const [className, setClassName] = useState<string>("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -627,10 +638,10 @@ function ClassTeachers({
           <Label>Class</Label>
           <Select value={className} onValueChange={setClassName}>
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue placeholder="Select class" />
             </SelectTrigger>
             <SelectContent>
-              {ADMISSION_CLASSES.map((c) => (
+              {classOptions.map((c) => (
                 <SelectItem key={c} value={c}>
                   {c}
                 </SelectItem>

@@ -1,7 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Building2, GraduationCap, Hash, Loader2, Palette, Plus, Save, Settings2, Tags, Trash2 } from "lucide-react";
+import {
+  Building2,
+  GraduationCap,
+  Hash,
+  Layers,
+  Loader2,
+  Palette,
+  Pencil,
+  Plus,
+  Save,
+  Settings2,
+  Tags,
+  Trash2,
+  X,
+} from "lucide-react";
 import type { ZodType } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +46,7 @@ import {
   type EducationLevel,
   type School,
   type SchoolBranding,
+  type SchoolClass,
   type SchoolType,
   type Subject,
   type TenantSettings,
@@ -39,6 +54,7 @@ import {
 import {
   brandingSchema,
   educationLevelSchema,
+  schoolClassSchema,
   schoolSchema,
   schoolTypeSchema,
   subjectSchema,
@@ -47,14 +63,18 @@ import {
 import {
   createEducationLevel,
   createSchool,
+  createSchoolClass,
   createSchoolType,
   createSubject,
   deleteSchool,
+  deleteSchoolClass,
   deleteSubject,
   getConfiguration,
   saveBranding,
   saveNumberingSettings,
   saveTenantSettings,
+  updateSchool,
+  updateSchoolClass,
 } from "@/lib/config.functions";
 import { NumberingSection } from "@/components/modules/NumberingSection";
 import type { NumberingSettings } from "@/lib/numbering";
@@ -117,11 +137,15 @@ const EMPTY_SCHOOL = {
 export function SystemConfiguration() {
   const load = useServerFn(getConfiguration);
   const addSchool = useServerFn(createSchool);
+  const editSchool = useServerFn(updateSchool);
   const removeSchool = useServerFn(deleteSchool);
   const addLevel = useServerFn(createEducationLevel);
   const addType = useServerFn(createSchoolType);
   const addSubject = useServerFn(createSubject);
   const removeSubject = useServerFn(deleteSubject);
+  const addClass = useServerFn(createSchoolClass);
+  const editClass = useServerFn(updateSchoolClass);
+  const removeClass = useServerFn(deleteSchoolClass);
   const savePolicy = useServerFn(saveTenantSettings);
   const saveBrand = useServerFn(saveBranding);
   const saveNumbering = useServerFn(saveNumberingSettings);
@@ -132,6 +156,7 @@ export function SystemConfiguration() {
   const [levels, setLevels] = useState<EducationLevel[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [settings, setSettings] = useState<TenantSettings[]>([]);
   const [branding, setBranding] = useState<SchoolBranding[]>([]);
   const [numbering, setNumbering] = useState<NumberingSettings[]>([]);
@@ -143,6 +168,7 @@ export function SystemConfiguration() {
     setLevels(data.levels as EducationLevel[]);
     setSchools(data.schools as School[]);
     setSubjects(data.subjects as Subject[]);
+    setClasses(data.classes as SchoolClass[]);
     setSettings(data.settings as unknown as TenantSettings[]);
     setBranding(data.branding as SchoolBranding[]);
     setNumbering(data.numbering as unknown as NumberingSettings[]);
@@ -177,6 +203,10 @@ export function SystemConfiguration() {
   const schoolSubjects = useMemo(
     () => subjects.filter((s) => s.school_id === schoolId),
     [subjects, schoolId],
+  );
+  const schoolClasses = useMemo(
+    () => classes.filter((c) => c.school_id === schoolId),
+    [classes, schoolId],
   );
   const schoolSettings = settings.find((s) => s.school_id === schoolId) ?? null;
   const schoolBranding = branding.find((b) => b.school_id === schoolId) ?? null;
@@ -228,6 +258,9 @@ export function SystemConfiguration() {
           <TabsTrigger value="types">
             <Tags className="size-4" aria-hidden /> School types
           </TabsTrigger>
+          <TabsTrigger value="classes">
+            <Layers className="size-4" aria-hidden /> Classes
+          </TabsTrigger>
           <TabsTrigger value="subjects">Subjects</TabsTrigger>
           <TabsTrigger value="policy">
             <Settings2 className="size-4" aria-hidden /> Tenant policy
@@ -247,9 +280,23 @@ export function SystemConfiguration() {
             schools={schools}
             busy={busy}
             onCreate={(payload) => run(() => addSchool({ data: payload }), "School provisioned")}
+            onUpdate={(payload) => run(() => editSchool({ data: payload }), "School updated")}
             onDelete={(id) => run(() => removeSchool({ data: { id } }), "School removed")}
           />
         </TabsContent>
+
+        <TabsContent value="classes" className="mt-6">
+          <ClassesSection
+            school={school ?? null}
+            levels={levels}
+            classes={schoolClasses}
+            busy={busy}
+            onCreate={(payload) => run(() => addClass({ data: payload }), "Class added")}
+            onUpdate={(payload) => run(() => editClass({ data: payload }), "Class updated")}
+            onDelete={(id) => run(() => removeClass({ data: { id } }), "Class removed")}
+          />
+        </TabsContent>
+
 
         <TabsContent value="levels" className="mt-6">
           <LevelsSection
@@ -317,6 +364,7 @@ function SchoolsSection({
   schools,
   busy,
   onCreate,
+  onUpdate,
   onDelete,
 }: {
   types: SchoolType[];
@@ -324,9 +372,11 @@ function SchoolsSection({
   schools: School[];
   busy: boolean;
   onCreate: (payload: Record<string, unknown>) => Promise<boolean>;
+  onUpdate: (payload: Record<string, unknown>) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
 }) {
   const [form, setForm] = useState({ ...EMPTY_SCHOOL });
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Errors>({});
 
   const set = (key: keyof typeof EMPTY_SCHOOL, value: unknown) =>
@@ -338,21 +388,56 @@ function SchoolsSection({
       levelCodes: on ? [...f.levelCodes, code] : f.levelCodes.filter((c) => c !== code),
     }));
 
+  const reset = () => {
+    setEditingId(null);
+    setErrors({});
+    setForm({ ...EMPTY_SCHOOL });
+  };
+
+  const startEdit = (s: School) => {
+    setEditingId(s.id);
+    setErrors({});
+    setForm({
+      name: s.name,
+      code: s.code,
+      country: s.country,
+      region: s.region ?? "",
+      district: s.district ?? "",
+      town: s.town ?? "",
+      community: s.community ?? "",
+      postalAddress: s.postal_address ?? "",
+      gpsAddress: s.gps_address ?? "",
+      timezone: s.timezone,
+      currency: s.currency,
+      locale: s.locale,
+      typeCode: s.type_code,
+      levelCodes: [...s.level_codes],
+    });
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const { data, errors: issues } = validate(schoolSchema, form);
     setErrors(issues);
     if (!data) return;
-    if (await onCreate(data as unknown as Record<string, unknown>)) setForm({ ...EMPTY_SCHOOL });
+    const ok = editingId
+      ? await onUpdate({ ...(data as unknown as Record<string, unknown>), id: editingId })
+      : await onCreate(data as unknown as Record<string, unknown>);
+    if (ok) reset();
   };
 
   return (
     <div className="space-y-8">
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-3">
         <div className="sm:col-span-3">
-          <h3 className="text-base font-semibold">Provision a school</h3>
+          <h3 className="text-base font-semibold">
+            {editingId ? "Update school details" : "Provision a school"}
+          </h3>
           <p className="text-sm text-muted-foreground">
-            Every record in the system is scoped to a school, so tenants scale without code changes.
+            {editingId
+              ? "Changes apply everywhere the school is used — classes, subjects, policy, branding and numbering stay attached."
+              : "Every record in the system is scoped to a school, so tenants scale without code changes."}
           </p>
         </div>
         <Field label="School name" error={errors["name"]}>
@@ -433,10 +518,23 @@ function SchoolsSection({
             ))}
           </div>
         </Field>
-        <div className="sm:col-span-3">
+        <div className="flex gap-2 sm:col-span-3">
           <Button type="submit" disabled={busy}>
-            <Plus className="size-4" aria-hidden /> Provision school
+            {editingId ? (
+              <>
+                <Save className="size-4" aria-hidden /> Save changes
+              </>
+            ) : (
+              <>
+                <Plus className="size-4" aria-hidden /> Provision school
+              </>
+            )}
           </Button>
+          {editingId ? (
+            <Button type="button" variant="ghost" onClick={reset} disabled={busy}>
+              <X className="size-4" aria-hidden /> Cancel
+            </Button>
+          ) : null}
         </div>
       </form>
 
@@ -461,17 +559,28 @@ function SchoolsSection({
                   {s.currency} · {s.locale} · {s.timezone} · {s.level_codes.length} levels
                 </p>
               </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                aria-label={`Remove ${s.name}`}
-                disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Remove ${s.name} and everything scoped to it?`)) void onDelete(s.id);
-                }}
-              >
-                <Trash2 className="size-4 text-destructive" aria-hidden />
-              </Button>
+              <div className="flex shrink-0 gap-1">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label={`Edit ${s.name}`}
+                  disabled={busy}
+                  onClick={() => startEdit(s)}
+                >
+                  <Pencil className="size-4" aria-hidden />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label={`Remove ${s.name}`}
+                  disabled={busy}
+                  onClick={() => {
+                    if (window.confirm(`Remove ${s.name} and everything scoped to it?`)) void onDelete(s.id);
+                  }}
+                >
+                  <Trash2 className="size-4 text-destructive" aria-hidden />
+                </Button>
+              </div>
             </div>
           </article>
         ))}
@@ -482,6 +591,183 @@ function SchoolsSection({
     </div>
   );
 }
+
+function ClassesSection({
+  school,
+  levels,
+  classes,
+  busy,
+  onCreate,
+  onUpdate,
+  onDelete,
+}: {
+  school: School | null;
+  levels: EducationLevel[];
+  classes: SchoolClass[];
+  busy: boolean;
+  onCreate: (payload: Record<string, unknown>) => Promise<boolean>;
+  onUpdate: (payload: Record<string, unknown>) => Promise<boolean>;
+  onDelete: (id: string) => Promise<boolean>;
+}) {
+  const empty = { levelCode: "", name: "", sortOrder: "1" };
+  const [form, setForm] = useState(empty);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Errors>({});
+
+  if (!school) {
+    return <p className="text-sm text-muted-foreground">Provision a school first.</p>;
+  }
+
+  const offered = levels.filter((l) => school.level_codes.includes(l.code));
+
+  const reset = () => {
+    setEditingId(null);
+    setErrors({});
+    setForm(empty);
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { data, errors: issues } = validate(schoolClassSchema, {
+      schoolId: school.id,
+      levelCode: form.levelCode,
+      name: form.name,
+      sortOrder: Number(form.sortOrder || 1),
+      active: true,
+    });
+    setErrors(issues);
+    if (!data) return;
+    const payload = data as unknown as Record<string, unknown>;
+    const ok = editingId
+      ? await onUpdate({
+          id: editingId,
+          levelCode: payload["levelCode"],
+          name: payload["name"],
+          sortOrder: payload["sortOrder"],
+        })
+      : await onCreate(payload);
+    if (ok) reset();
+  };
+
+  return (
+    <div className="space-y-8">
+      <form onSubmit={submit} className="grid gap-4 sm:grid-cols-4">
+        <div className="sm:col-span-4">
+          <h3 className="text-base font-semibold">Classes at {school.name}</h3>
+          <p className="text-sm text-muted-foreground">
+            Classes sit under the education levels chosen when the school was provisioned, and are the
+            list every module uses — admissions, students, attendance and assessments.
+          </p>
+        </div>
+        <Field label="Education level" error={errors["levelCode"]}>
+          <Select value={form.levelCode} onValueChange={(v) => setForm({ ...form, levelCode: v })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select level" />
+            </SelectTrigger>
+            <SelectContent>
+              {offered.map((l) => (
+                <SelectItem key={l.code} value={l.code}>
+                  {l.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field label="Class name" error={errors["name"]}>
+          <Input
+            placeholder="Basic 1"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+        </Field>
+        <Field label="Order" error={errors["sortOrder"]}>
+          <Input
+            type="number"
+            min={1}
+            value={form.sortOrder}
+            onChange={(e) => setForm({ ...form, sortOrder: e.target.value })}
+          />
+        </Field>
+        <div className="flex items-end gap-2">
+          <Button type="submit" disabled={busy}>
+            {editingId ? (
+              <>
+                <Save className="size-4" aria-hidden /> Save
+              </>
+            ) : (
+              <>
+                <Plus className="size-4" aria-hidden /> Add class
+              </>
+            )}
+          </Button>
+          {editingId ? (
+            <Button type="button" variant="ghost" onClick={reset} disabled={busy}>
+              <X className="size-4" aria-hidden /> Cancel
+            </Button>
+          ) : null}
+        </div>
+      </form>
+
+      <div className="space-y-6">
+        {offered.map((l) => {
+          const rows = classes
+            .filter((c) => c.level_code === l.code)
+            .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
+          return (
+            <section key={l.code} className="space-y-2">
+              <h4 className="text-sm font-semibold">{l.name}</h4>
+              {rows.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No classes added for this level yet.</p>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {rows.map((c) => (
+                    <article
+                      key={c.id}
+                      className="flex items-center justify-between gap-2 rounded-xl border border-border p-3"
+                    >
+                      <span className="text-sm font-medium">{c.name}</span>
+                      <span className="flex gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label={`Edit ${c.name}`}
+                          disabled={busy}
+                          onClick={() => {
+                            setEditingId(c.id);
+                            setErrors({});
+                            setForm({
+                              levelCode: c.level_code,
+                              name: c.name,
+                              sortOrder: String(c.sort_order),
+                            });
+                          }}
+                        >
+                          <Pencil className="size-4" aria-hidden />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label={`Remove ${c.name}`}
+                          disabled={busy}
+                          onClick={() => {
+                            if (window.confirm(`Remove ${c.name}?`)) void onDelete(c.id);
+                          }}
+                        >
+                          <Trash2 className="size-4 text-destructive" aria-hidden />
+                        </Button>
+                      </span>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 
 function LevelsSection({
   levels,

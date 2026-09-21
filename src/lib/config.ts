@@ -58,6 +58,15 @@ export interface Subject {
   active: boolean;
 }
 
+export interface SchoolClass {
+  id: string;
+  school_id: string;
+  level_code: string;
+  name: string;
+  sort_order: number;
+  active: boolean;
+}
+
 export interface RatingScaleItem {
   value: string;
   label: string;
