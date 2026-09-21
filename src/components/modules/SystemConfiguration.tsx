@@ -1,7 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Building2, GraduationCap, Hash, Loader2, Palette, Plus, Save, Settings2, Tags, Trash2 } from "lucide-react";
+import {
+  Building2,
+  GraduationCap,
+  Hash,
+  Layers,
+  Loader2,
+  Palette,
+  Pencil,
+  Plus,
+  Save,
+  Settings2,
+  Tags,
+  Trash2,
+  X,
+} from "lucide-react";
 import type { ZodType } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
