@@ -559,17 +559,28 @@ function SchoolsSection({
                   {s.currency} · {s.locale} · {s.timezone} · {s.level_codes.length} levels
                 </p>
               </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                aria-label={`Remove ${s.name}`}
-                disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Remove ${s.name} and everything scoped to it?`)) void onDelete(s.id);
-                }}
-              >
-                <Trash2 className="size-4 text-destructive" aria-hidden />
-              </Button>
+              <div className="flex shrink-0 gap-1">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label={`Edit ${s.name}`}
+                  disabled={busy}
+                  onClick={() => startEdit(s)}
+                >
+                  <Pencil className="size-4" aria-hidden />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label={`Remove ${s.name}`}
+                  disabled={busy}
+                  onClick={() => {
+                    if (window.confirm(`Remove ${s.name} and everything scoped to it?`)) void onDelete(s.id);
+                  }}
+                >
+                  <Trash2 className="size-4 text-destructive" aria-hidden />
+                </Button>
+              </div>
             </div>
           </article>
         ))}
