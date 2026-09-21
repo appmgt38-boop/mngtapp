@@ -97,6 +97,9 @@ export function AdmissionsManagement() {
     void refresh();
   }, []);
 
+  const { names: configuredClasses } = useSchoolClasses();
+  const classOptions = configuredClasses.length ? configuredClasses : ADMISSION_CLASSES;
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
