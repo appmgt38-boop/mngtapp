@@ -80,6 +80,26 @@ export const subjectSchema = z.object({
   active: z.boolean().default(true),
 });
 
+/* ------------------------------ classes ------------------------------ */
+
+export const schoolClassSchema = z.object({
+  schoolId: z.string().uuid(),
+  levelCode: codeSchema,
+  name: trimmed(1, 80),
+  sortOrder: z.number().int().min(1).max(999).default(1),
+  active: z.boolean().default(true),
+});
+
+export const updateSchoolClassSchema = z.object({
+  id: z.string().uuid(),
+  levelCode: codeSchema.optional(),
+  name: trimmed(1, 80).optional(),
+  sortOrder: z.number().int().min(1).max(999).optional(),
+  active: z.boolean().optional(),
+});
+
+export type SchoolClassInput = z.infer<typeof schoolClassSchema>;
+
 export const tenantSettingsSchema = z.object({
   schoolId: z.string().uuid(),
   positions: z.array(trimmed(1, 80)).max(60),
