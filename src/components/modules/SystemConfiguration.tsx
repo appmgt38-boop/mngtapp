@@ -137,11 +137,15 @@ const EMPTY_SCHOOL = {
 export function SystemConfiguration() {
   const load = useServerFn(getConfiguration);
   const addSchool = useServerFn(createSchool);
+  const editSchool = useServerFn(updateSchool);
   const removeSchool = useServerFn(deleteSchool);
   const addLevel = useServerFn(createEducationLevel);
   const addType = useServerFn(createSchoolType);
   const addSubject = useServerFn(createSubject);
   const removeSubject = useServerFn(deleteSubject);
+  const addClass = useServerFn(createSchoolClass);
+  const editClass = useServerFn(updateSchoolClass);
+  const removeClass = useServerFn(deleteSchoolClass);
   const savePolicy = useServerFn(saveTenantSettings);
   const saveBrand = useServerFn(saveBranding);
   const saveNumbering = useServerFn(saveNumberingSettings);
@@ -152,6 +156,7 @@ export function SystemConfiguration() {
   const [levels, setLevels] = useState<EducationLevel[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [settings, setSettings] = useState<TenantSettings[]>([]);
   const [branding, setBranding] = useState<SchoolBranding[]>([]);
   const [numbering, setNumbering] = useState<NumberingSettings[]>([]);
@@ -163,6 +168,7 @@ export function SystemConfiguration() {
     setLevels(data.levels as EducationLevel[]);
     setSchools(data.schools as School[]);
     setSubjects(data.subjects as Subject[]);
+    setClasses(data.classes as SchoolClass[]);
     setSettings(data.settings as unknown as TenantSettings[]);
     setBranding(data.branding as SchoolBranding[]);
     setNumbering(data.numbering as unknown as NumberingSettings[]);
