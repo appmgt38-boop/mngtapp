@@ -11,7 +11,7 @@ export interface TenantOptions {
 }
 
 const FALLBACK: TenantOptions = {
-  positions: [...DEFAULT_POSITIONS],
+  positions: mergePositions(DEFAULT_POSITIONS),
   departments: [...DEFAULT_DEPARTMENTS],
   scheduleTypes: [...DEFAULT_SCHEDULE_TYPES],
 };
@@ -31,7 +31,7 @@ export function useTenantOptions(): TenantOptions {
       .then((o) => {
         if (!active) return;
         setOptions({
-          positions: o.positions?.length ? o.positions : FALLBACK.positions,
+          positions: mergePositions(o.positions?.length ? o.positions : FALLBACK.positions),
           departments: o.departments?.length ? o.departments : FALLBACK.departments,
           scheduleTypes: o.scheduleTypes?.length ? o.scheduleTypes : FALLBACK.scheduleTypes,
         });
