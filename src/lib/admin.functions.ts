@@ -116,6 +116,33 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
   });
 
 
+/**
+ * Replace the classes/subjects a teacher teaches. Every class × subject pair
+ * is stored as its own row, so a teacher can carry several of each. Cleared
+ * for anyone who is not on the Teacher position.
+ */
+async function syncTeachingAssignments(
+  admin: { from: (t: "teaching_assignments") => never } | typeof import("@/integrations/supabase/client.server")["supabaseAdmin"],
+  teacherId: string,
+  position: string | null | undefined,
+  classes: string[] | undefined,
+  subjects: string[] | undefined,
+) {
+  const client = admin as typeof import("@/integrations/supabase/client.server")["supabaseAdmin"];
+  await client.from("teaching_assignments").delete().eq("teacher_id", teacherId);
+  if ((position ?? "").trim().toLowerCase() !== "teacher") return;
+  const rows = [...new Set(classes ?? [])].flatMap((className) =>
+    [...new Set(subjects ?? [])].map((subject) => ({
+      teacher_id: teacherId,
+      class_name: className,
+      subject,
+    })),
+  );
+  if (rows.length === 0) return;
+  const { error } = await client.from("teaching_assignments").insert(rows);
+  if (error) throw new Error(error.message);
+}
+
 /** Admin: list all accounts. */
 export const listAccounts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
