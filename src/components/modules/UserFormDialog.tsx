@@ -73,6 +73,8 @@ export interface UserFormValues {
   position: string;
   salary: string;
   startDate: string;
+  teachingClasses: string[];
+  teachingSubjects: string[];
 }
 
 const PAYROLL_ROLES: Role[] = ["staff", "school_manager"];
@@ -98,6 +100,8 @@ function emptyForm(): UserFormValues {
     position: "",
     salary: "",
     startDate: "",
+    teachingClasses: [],
+    teachingSubjects: [],
   };
 }
 
@@ -120,6 +124,8 @@ function fromAccount(a: AccountRow): UserFormValues {
     position: a.position ?? "",
     salary: a.salary != null ? String(a.salary) : "",
     startDate: a.start_date ?? "",
+    teachingClasses: [],
+    teachingSubjects: [],
   };
 }
 
