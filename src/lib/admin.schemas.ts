@@ -36,6 +36,24 @@ const profileExtras = {
   position: z.string().max(120).optional().nullable(),
   salary: z.number().min(0).max(100000000).optional().nullable(),
   startDate: z.string().max(20).optional().nullable(),
+  teachingClasses: z.array(z.string().min(1).max(60)).max(60).optional(),
+  teachingSubjects: z.array(z.string().min(1).max(120)).max(60).optional(),
+};
+
+/**
+ * A teacher must be given at least one class and one subject to teach. This is
+ * separate from the class-teacher responsibility assigned under Admissions.
+ */
+const requireTeaching = (v: {
+  position?: string | null | undefined;
+  teachingClasses?: string[] | undefined;
+  teachingSubjects?: string[] | undefined;
+}) =>
+  (v.position ?? "").trim().toLowerCase() !== "teacher" ||
+  ((v.teachingClasses?.length ?? 0) > 0 && (v.teachingSubjects?.length ?? 0) > 0);
+const teachingIssue = {
+  message: "A teacher needs at least one class and one subject to teach.",
+  path: ["teachingClasses"] as (string | number)[],
 };
 
 /** Payroll requires a salary for staff-side roles. */
@@ -59,7 +77,8 @@ export const createAccountSchema = accountSchema
     accessLevel: levelEnum.optional(),
     ...profileExtras,
   })
-  .refine(requireSalary, salaryIssue);
+  .refine(requireSalary, salaryIssue)
+  .refine(requireTeaching, teachingIssue);
 
 export const updateAccountSchema = z
   .object({
@@ -71,7 +90,8 @@ export const updateAccountSchema = z
     status: z.enum(["active", "suspended", "inactive"]),
     ...profileExtras,
   })
-  .refine(requireSalary, salaryIssue);
+  .refine(requireSalary, salaryIssue)
+  .refine(requireTeaching, teachingIssue);
 
 export const statusSchema = z.object({
   userId: z.string().uuid(),

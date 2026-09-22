@@ -23,6 +23,7 @@ import {
   defaultModuleFeatures,
   mergedFeatures,
 } from "@/lib/config";
+import { mergePositions } from "@/lib/teaching";
 
 /** Everything the System Configuration module needs, in one round trip. */
 export const getConfiguration = createServerFn({ method: "GET" })
@@ -385,10 +386,22 @@ export const getTenantOptions = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
 
     return {
-      positions: data?.positions?.length ? data.positions : DEFAULT_POSITIONS,
+      positions: mergePositions(data?.positions?.length ? data.positions : DEFAULT_POSITIONS),
       departments: data?.departments?.length ? data.departments : DEFAULT_DEPARTMENTS,
       scheduleTypes: data?.schedule_types?.length ? data.schedule_types : DEFAULT_SCHEDULE_TYPES,
     };
+  });
+
+/** Subject names any signed-in user can pick from (teaching assignments, assessments). */
+export const getSubjectOptions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("subjects")
+      .select("name, active")
+      .order("name");
+    if (error) throw new Error(error.message);
+    return [...new Set((data ?? []).filter((s) => s.active !== false).map((s) => s.name))];
   });
 
 /* ------------------------------ classes ------------------------------ */

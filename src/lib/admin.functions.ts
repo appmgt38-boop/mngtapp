@@ -116,6 +116,34 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
   });
 
 
+type AdminClient = typeof import("@/integrations/supabase/client.server")["supabaseAdmin"];
+
+/**
+ * Replace the classes/subjects a teacher teaches. Every class × subject pair
+ * is stored as its own row, so a teacher can carry several of each. Cleared
+ * for anyone who is not on the Teacher position.
+ */
+async function syncTeachingAssignments(
+  client: AdminClient,
+  teacherId: string,
+  position: string | null | undefined,
+  classes: string[] | undefined,
+  subjects: string[] | undefined,
+) {
+  await client.from("teaching_assignments").delete().eq("teacher_id", teacherId);
+  if ((position ?? "").trim().toLowerCase() !== "teacher") return;
+  const rows = [...new Set(classes ?? [])].flatMap((className) =>
+    [...new Set(subjects ?? [])].map((subject) => ({
+      teacher_id: teacherId,
+      class_name: className,
+      subject,
+    })),
+  );
+  if (rows.length === 0) return;
+  const { error } = await client.from("teaching_assignments").insert(rows);
+  if (error) throw new Error(error.message);
+}
+
 /** Admin: list all accounts. */
 export const listAccounts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -174,6 +202,13 @@ export const createAccount = createServerFn({ method: "POST" })
       throw new Error(profileError.message);
     }
     await supabaseAdmin.from("user_roles").insert({ user_id: user.user.id, role: data.role });
+    await syncTeachingAssignments(
+      supabaseAdmin,
+      user.user.id,
+      data.position,
+      data.teachingClasses,
+      data.teachingSubjects,
+    );
 
     await logAudit(context.supabase, context.userId, {
       action: "user_created",
@@ -220,6 +255,13 @@ export const updateAccount = createServerFn({ method: "POST" })
     await supabaseAdmin.auth.admin.updateUserById(data.userId, { email: data.email });
     await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
     await supabaseAdmin.from("user_roles").insert({ user_id: data.userId, role: data.role });
+    await syncTeachingAssignments(
+      supabaseAdmin,
+      data.userId,
+      data.position,
+      data.teachingClasses,
+      data.teachingSubjects,
+    );
 
     await logAudit(context.supabase, context.userId, {
       action: "user_updated",
