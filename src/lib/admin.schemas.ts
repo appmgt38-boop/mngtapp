@@ -77,7 +77,8 @@ export const createAccountSchema = accountSchema
     accessLevel: levelEnum.optional(),
     ...profileExtras,
   })
-  .refine(requireSalary, salaryIssue);
+  .refine(requireSalary, salaryIssue)
+  .refine(requireTeaching, teachingIssue);
 
 export const updateAccountSchema = z
   .object({
@@ -89,7 +90,8 @@ export const updateAccountSchema = z
     status: z.enum(["active", "suspended", "inactive"]),
     ...profileExtras,
   })
-  .refine(requireSalary, salaryIssue);
+  .refine(requireSalary, salaryIssue)
+  .refine(requireTeaching, teachingIssue);
 
 export const statusSchema = z.object({
   userId: z.string().uuid(),
