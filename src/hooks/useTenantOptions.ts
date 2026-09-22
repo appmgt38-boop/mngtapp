@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getTenantOptions } from "@/lib/config.functions";
 import { DEFAULT_DEPARTMENTS, DEFAULT_POSITIONS, DEFAULT_SCHEDULE_TYPES } from "@/lib/config";
+import { mergePositions } from "@/lib/teaching";
 
 export interface TenantOptions {
   positions: string[];
