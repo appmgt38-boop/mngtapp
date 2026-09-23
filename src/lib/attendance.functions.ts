@@ -2,8 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { registerQuerySchema, saveAttendanceSchema } from "@/lib/attendance.schemas";
 
-type Ctx = { supabase: never };
-
 /**
  * Attendance is for administrators and for staff who carry class teacher
  * responsibility (assigned under Admissions) — nobody else.

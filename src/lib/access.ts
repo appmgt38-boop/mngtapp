@@ -137,7 +137,7 @@ export const MODULES: ModuleDef[] = [
     description: "Daily registers, absence tracking and reports.",
     icon: CalendarCheck,
     category: "Academics",
-    roles: ["super_admin", "school_manager", "staff", "student"],
+    roles: STAFF_UP,
   },
   {
     id: "students",
