@@ -192,6 +192,18 @@ export function AttendanceManagement() {
     );
   }
 
+  if (access && !access.allowed) {
+    return (
+      <section className="surface p-6">
+        <h2 className="text-lg font-semibold">Attendance is not available to you</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Attendance is open to administrators and to staff who have been given class teacher
+          responsibility for a class under Admissions.
+        </p>
+      </section>
+    );
+  }
+
   return (
     <Tabs defaultValue="register" className="space-y-6">
       <TabsList>
