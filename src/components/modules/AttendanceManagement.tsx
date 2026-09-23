@@ -79,8 +79,18 @@ export function AttendanceManagement() {
 
   useEffect(() => {
     void (async () => {
+      let granted = { allowed: false, isAdmin: false, classes: [] as string[] };
       try {
-        const list = (await loadClasses()) as ClassOption[];
+        granted = (await loadAccess()) as typeof granted;
+        setAccess(granted);
+        if (!granted.allowed) {
+          setLoading(false);
+          return;
+        }
+        const all = (await loadClasses()) as ClassOption[];
+        const list = granted.isAdmin
+          ? all
+          : all.filter((c) => granted.classes.includes(c.className));
         setClasses(list);
         if (list[0]) setClassName(list[0].className);
       } catch (e) {
@@ -88,7 +98,7 @@ export function AttendanceManagement() {
       } finally {
         setLoading(false);
       }
-      await refreshHistory();
+      if (granted.allowed) await refreshHistory();
     })();
   }, []);
 
