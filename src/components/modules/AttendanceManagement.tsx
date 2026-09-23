@@ -15,6 +15,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ATTENDANCE_STATUSES, type AttendanceStatus } from "@/lib/attendance.schemas";
 import {
+  getAttendanceAccess,
   getAttendanceClasses,
   getAttendanceHistory,
   getClassRegister,
@@ -54,7 +55,11 @@ export function AttendanceManagement() {
   const loadRegister = useServerFn(getClassRegister);
   const save = useServerFn(saveAttendance);
   const loadHistory = useServerFn(getAttendanceHistory);
+  const loadAccess = useServerFn(getAttendanceAccess);
 
+  const [access, setAccess] = useState<{ allowed: boolean; isAdmin: boolean; classes: string[] } | null>(
+    null,
+  );
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [className, setClassName] = useState("");
   const [date, setDate] = useState(today());
