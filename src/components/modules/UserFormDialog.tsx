@@ -215,9 +215,29 @@ export function UserFormDialog({
       permissions: on ? [...f.permissions, id] : f.permissions.filter((p) => p !== id),
     }));
 
+  const teaching = isTeacherPosition(form.position) && PAYROLL_ROLES.includes(form.role);
+
+  const changePosition = (position: string) =>
+    setForm((f) => ({
+      ...f,
+      position,
+      teachingClasses: isTeacherPosition(position) ? f.teachingClasses : [],
+      teachingSubjects: isTeacherPosition(position) ? f.teachingSubjects : [],
+    }));
+
+  const toggleIn = (key: "teachingClasses" | "teachingSubjects", value: string, on: boolean) =>
+    setForm((f) => ({
+      ...f,
+      [key]: on ? [...f[key], value] : f[key].filter((v) => v !== value),
+    }));
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (teaching && (form.teachingClasses.length === 0 || form.teachingSubjects.length === 0)) {
+      setError("A teacher needs at least one class and one subject to teach.");
+      return;
+    }
     if (PAYROLL_ROLES.includes(form.role)) {
       const salary = Number(form.salary);
       if (!form.salary || !Number.isFinite(salary) || salary <= 0) {
