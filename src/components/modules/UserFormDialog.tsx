@@ -435,6 +435,53 @@ export function UserFormDialog({
             </>
           )}
 
+          {teaching && (
+            <fieldset className="rounded-md border border-border p-4 sm:col-span-2">
+              <legend className="px-1 text-sm font-medium">Teaching load</legend>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Pick every class and every subject this teacher teaches. This is separate from
+                class teacher responsibility, which is assigned under Admissions.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="mb-2 text-sm font-medium">Classes taught</p>
+                  <div className="grid max-h-48 gap-2 overflow-y-auto">
+                    {classOptions.map((c) => (
+                      <label key={c} className="flex items-center gap-2 text-sm">
+                        <Checkbox
+                          checked={form.teachingClasses.includes(c)}
+                          onCheckedChange={(v) => toggleIn("teachingClasses", c, v === true)}
+                        />
+                        {c}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-2 text-sm font-medium">Subjects taught</p>
+                  {subjectOptions.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      No subjects have been set up yet — add them under System Configuration →
+                      Subjects.
+                    </p>
+                  ) : (
+                    <div className="grid max-h-48 gap-2 overflow-y-auto">
+                      {subjectOptions.map((s) => (
+                        <label key={s} className="flex items-center gap-2 text-sm">
+                          <Checkbox
+                            checked={form.teachingSubjects.includes(s)}
+                            onCheckedChange={(v) => toggleIn("teachingSubjects", s, v === true)}
+                          />
+                          {s}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </fieldset>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="uf-dept">Department</Label>
             <Select value={form.department} onValueChange={(v) => set("department", v)}>
