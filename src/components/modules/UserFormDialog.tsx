@@ -390,7 +390,7 @@ export function UserFormDialog({
             <>
               <div className="space-y-2">
                 <Label htmlFor="uf-position">Position</Label>
-                <Select value={form.position} onValueChange={(v) => set("position", v)}>
+                <Select value={form.position} onValueChange={changePosition}>
                   <SelectTrigger id="uf-position">
                     <SelectValue placeholder="Select position" />
                   </SelectTrigger>
