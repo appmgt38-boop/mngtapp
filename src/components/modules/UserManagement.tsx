@@ -209,6 +209,8 @@ export function UserManagement() {
             position: values.position || null,
             salary: values.salary ? Number(values.salary) : null,
             startDate: values.startDate || null,
+            teachingClasses: values.teachingClasses,
+            teachingSubjects: values.teachingSubjects,
           },
         });
         if (values.password) {
@@ -233,6 +235,8 @@ export function UserManagement() {
             position: values.position || null,
             salary: values.salary ? Number(values.salary) : null,
             startDate: values.startDate || null,
+            teachingClasses: values.teachingClasses,
+            teachingSubjects: values.teachingSubjects,
           },
         });
         toast.success("Account created");

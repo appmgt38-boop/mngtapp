@@ -175,6 +175,8 @@ export function StaffManagement() {
           position: values.position || null,
           salary: values.salary ? Number(values.salary) : null,
           startDate: values.startDate || null,
+            teachingClasses: values.teachingClasses,
+            teachingSubjects: values.teachingSubjects,
         },
       });
       toast.success("Staff member onboarded — employee ID generated");
