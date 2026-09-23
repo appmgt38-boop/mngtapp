@@ -2,6 +2,41 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { registerQuerySchema, saveAttendanceSchema } from "@/lib/attendance.schemas";
 
+type Ctx = { supabase: never };
+
+/**
+ * Attendance is for administrators and for staff who carry class teacher
+ * responsibility (assigned under Admissions) — nobody else.
+ */
+export const getAttendanceAccess = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: profile } = await context.supabase
+      .from("profiles")
+      .select("role, email")
+      .eq("id", context.userId)
+      .maybeSingle();
+
+    const role = profile?.role ?? "";
+    if (role === "super_admin" || role === "school_manager") {
+      return { allowed: true, isAdmin: true, classes: [] as string[] };
+    }
+    if (role !== "staff") return { allowed: false, isAdmin: false, classes: [] as string[] };
+
+    const { data: rows } = await context.supabase
+      .from("class_teachers")
+      .select("class_name, teacher_id, teacher_email");
+    const email = (profile?.email ?? "").toLowerCase();
+    const classes = (rows ?? [])
+      .filter(
+        (r) =>
+          r.teacher_id === context.userId || (r.teacher_email ?? "").toLowerCase() === email,
+      )
+      .map((r) => r.class_name);
+
+    return { allowed: classes.length > 0, isAdmin: false, classes };
+  });
+
 /** Classes that actually have admitted students, plus their class teacher. */
 export const getAttendanceClasses = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
