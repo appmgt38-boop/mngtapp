@@ -131,6 +131,10 @@ function fromAccount(a: AccountRow): UserFormValues {
 
 import { useTenantOptions } from "@/hooks/useTenantOptions";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
+import { useSubjectOptions } from "@/hooks/useSubjectOptions";
+import { useServerFn } from "@tanstack/react-start";
+import { getTeachingAssignments } from "@/lib/teaching.functions";
+import { isTeacherPosition, splitAssignments } from "@/lib/teaching";
 
 export function UserFormDialog({
   open,
@@ -152,6 +156,8 @@ export function UserFormDialog({
   const editing = Boolean(account);
   const { positions, departments } = useTenantOptions();
   const { names: configuredClasses } = useSchoolClasses();
+  const { subjects: subjectOptions } = useSubjectOptions();
+  const loadTeaching = useServerFn(getTeachingAssignments);
   const classOptions = configuredClasses.length ? configuredClasses : CLASSES;
   const [form, setForm] = useState<UserFormValues>(emptyForm());
   const [error, setError] = useState<string | null>(null);
@@ -161,6 +167,15 @@ export function UserFormDialog({
     setError(null);
     if (account) {
       setForm(fromAccount(account));
+      const accountId = account.id;
+      void loadTeaching({ data: { teacherId: accountId } })
+        .then((rows) => {
+          const { classes, subjects } = splitAssignments(
+            rows as { class_name: string; subject: string }[],
+          );
+          setForm((f) => ({ ...f, teachingClasses: classes, teachingSubjects: subjects }));
+        })
+        .catch(() => undefined);
       return;
     }
     const base = emptyForm();
@@ -200,9 +215,29 @@ export function UserFormDialog({
       permissions: on ? [...f.permissions, id] : f.permissions.filter((p) => p !== id),
     }));
 
+  const teaching = isTeacherPosition(form.position) && PAYROLL_ROLES.includes(form.role);
+
+  const changePosition = (position: string) =>
+    setForm((f) => ({
+      ...f,
+      position,
+      teachingClasses: isTeacherPosition(position) ? f.teachingClasses : [],
+      teachingSubjects: isTeacherPosition(position) ? f.teachingSubjects : [],
+    }));
+
+  const toggleIn = (key: "teachingClasses" | "teachingSubjects", value: string, on: boolean) =>
+    setForm((f) => ({
+      ...f,
+      [key]: on ? [...f[key], value] : f[key].filter((v) => v !== value),
+    }));
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (teaching && (form.teachingClasses.length === 0 || form.teachingSubjects.length === 0)) {
+      setError("A teacher needs at least one class and one subject to teach.");
+      return;
+    }
     if (PAYROLL_ROLES.includes(form.role)) {
       const salary = Number(form.salary);
       if (!form.salary || !Number.isFinite(salary) || salary <= 0) {
@@ -355,7 +390,7 @@ export function UserFormDialog({
             <>
               <div className="space-y-2">
                 <Label htmlFor="uf-position">Position</Label>
-                <Select value={form.position} onValueChange={(v) => set("position", v)}>
+                <Select value={form.position} onValueChange={changePosition}>
                   <SelectTrigger id="uf-position">
                     <SelectValue placeholder="Select position" />
                   </SelectTrigger>
@@ -398,6 +433,53 @@ export function UserFormDialog({
                 />
               </div>
             </>
+          )}
+
+          {teaching && (
+            <fieldset className="rounded-md border border-border p-4 sm:col-span-2">
+              <legend className="px-1 text-sm font-medium">Teaching load</legend>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Pick every class and every subject this teacher teaches. This is separate from
+                class teacher responsibility, which is assigned under Admissions.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="mb-2 text-sm font-medium">Classes taught</p>
+                  <div className="grid max-h-48 gap-2 overflow-y-auto">
+                    {classOptions.map((c) => (
+                      <label key={c} className="flex items-center gap-2 text-sm">
+                        <Checkbox
+                          checked={form.teachingClasses.includes(c)}
+                          onCheckedChange={(v) => toggleIn("teachingClasses", c, v === true)}
+                        />
+                        {c}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-2 text-sm font-medium">Subjects taught</p>
+                  {subjectOptions.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      No subjects have been set up yet — add them under System Configuration →
+                      Subjects.
+                    </p>
+                  ) : (
+                    <div className="grid max-h-48 gap-2 overflow-y-auto">
+                      {subjectOptions.map((s) => (
+                        <label key={s} className="flex items-center gap-2 text-sm">
+                          <Checkbox
+                            checked={form.teachingSubjects.includes(s)}
+                            onCheckedChange={(v) => toggleIn("teachingSubjects", s, v === true)}
+                          />
+                          {s}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </fieldset>
           )}
 
           <div className="space-y-2">
