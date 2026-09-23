@@ -131,6 +131,10 @@ function fromAccount(a: AccountRow): UserFormValues {
 
 import { useTenantOptions } from "@/hooks/useTenantOptions";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
+import { useSubjectOptions } from "@/hooks/useSubjectOptions";
+import { useServerFn } from "@tanstack/react-start";
+import { getTeachingAssignments } from "@/lib/teaching.functions";
+import { isTeacherPosition, splitAssignments } from "@/lib/teaching";
 
 export function UserFormDialog({
   open,
@@ -152,6 +156,8 @@ export function UserFormDialog({
   const editing = Boolean(account);
   const { positions, departments } = useTenantOptions();
   const { names: configuredClasses } = useSchoolClasses();
+  const { subjects: subjectOptions } = useSubjectOptions();
+  const loadTeaching = useServerFn(getTeachingAssignments);
   const classOptions = configuredClasses.length ? configuredClasses : CLASSES;
   const [form, setForm] = useState<UserFormValues>(emptyForm());
   const [error, setError] = useState<string | null>(null);
@@ -161,6 +167,15 @@ export function UserFormDialog({
     setError(null);
     if (account) {
       setForm(fromAccount(account));
+      const accountId = account.id;
+      void loadTeaching({ data: { teacherId: accountId } })
+        .then((rows) => {
+          const { classes, subjects } = splitAssignments(
+            rows as { class_name: string; subject: string }[],
+          );
+          setForm((f) => ({ ...f, teachingClasses: classes, teachingSubjects: subjects }));
+        })
+        .catch(() => undefined);
       return;
     }
     const base = emptyForm();
