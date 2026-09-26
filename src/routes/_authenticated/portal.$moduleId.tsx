@@ -9,6 +9,7 @@ import { AdmissionsManagement } from "@/components/modules/AdmissionsManagement"
 import { ParentChildren } from "@/components/modules/ParentChildren";
 import { SystemConfiguration } from "@/components/modules/SystemConfiguration";
 import { FinancialManagement } from "@/components/modules/FinancialManagement";
+import { FinancialConfiguration } from "@/components/modules/FinancialConfiguration";
 import { AttendanceManagement } from "@/components/modules/AttendanceManagement";
 import { AssessmentManagement } from "@/components/modules/AssessmentManagement";
 
@@ -83,6 +84,8 @@ function ModulePage() {
         <SystemConfiguration />
       ) : mod.id === "financial-management" ? (
         <FinancialManagement />
+      ) : mod.id === "financial-configuration" ? (
+        <FinancialConfiguration />
       ) : mod.id === "attendance" ? (
         <AttendanceManagement />
       ) : mod.id === "assessment" ? (
