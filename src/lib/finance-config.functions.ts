@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { Json } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertSuperAdmin } from "@/lib/admin.server";
 import {
@@ -117,7 +118,14 @@ export const getActiveFinanceConfig = createServerFn({ method: "GET" })
       .order("created_at")
       .limit(1)
       .maybeSingle();
-    if (!school) return { schoolId: null, settings: {}, items: [], rules: [] };
+    if (!school)
+      return {
+        schoolId: null as string | null,
+        currencyFallback: { code: "GHS", locale: "en-GH" },
+        settings: {} as Record<string, Record<string, Json>>,
+        items: [],
+        rules: [],
+      };
 
     const [sections, items, rules] = await Promise.all([
       supabase
@@ -140,14 +148,15 @@ export const getActiveFinanceConfig = createServerFn({ method: "GET" })
         .order("priority"),
     ]);
 
-    const settings: Record<string, Record<string, unknown>> = {};
+    const settings: Record<string, Record<string, Json>> = {};
     for (const row of sections.data ?? []) {
       if (row.effective_from && row.effective_from > today) continue;
-      if (!settings[row.section_key]) settings[row.section_key] = row.payload ?? {};
+      if (!settings[row.section_key])
+        settings[row.section_key] = (row.payload ?? {}) as Record<string, Json>;
     }
 
     return {
-      schoolId: school.id,
+      schoolId: school.id as string | null,
       currencyFallback: { code: school.currency, locale: school.locale },
       settings,
       items: items.data ?? [],
@@ -181,7 +190,7 @@ export const saveFinanceSection = createServerFn({ method: "POST" })
       const { error } = await supabase
         .from("finance_config_sections")
         .update({
-          payload: data.payload,
+          payload: data.payload as Json,
           notes: data.notes,
           effective_from: data.effectiveFrom,
         })
@@ -199,7 +208,7 @@ export const saveFinanceSection = createServerFn({ method: "POST" })
         section_key: data.sectionKey,
         version: nextVersion,
         status: "draft",
-        payload: data.payload,
+        payload: data.payload as Json,
         notes: data.notes,
         effective_from: data.effectiveFrom,
         created_by: context.userId,
@@ -250,7 +259,7 @@ export const setFinanceSectionStatus = createServerFn({ method: "POST" })
       patch['effective_from'] = new Date().toISOString().slice(0, 10);
     }
 
-    const { error } = await supabase.from("finance_config_sections").update(patch).eq("id", data.id);
+    const { error } = await supabase.from("finance_config_sections").update(patch as never).eq("id", data.id);
     if (error) throw new Error(error.message);
 
     await audit(
@@ -279,12 +288,12 @@ export const saveFinanceItem = createServerFn({ method: "POST" })
       parent_code: data.parentCode ?? null,
       sort_order: data.sortOrder,
       active: data.active,
-      metadata: data.metadata,
+      metadata: data.metadata as Json,
     };
 
     const query = data.id
-      ? context.supabase.from("finance_reference_items").update(row).eq("id", data.id)
-      : context.supabase.from("finance_reference_items").insert(row);
+      ? context.supabase.from("finance_reference_items").update(row as never).eq("id", data.id)
+      : context.supabase.from("finance_reference_items").insert(row as never);
     const { error } = await query;
     if (error) {
       if (error.code === "23505") throw new Error("That code already exists in this list.");
@@ -311,16 +320,16 @@ export const saveFinanceRule = createServerFn({ method: "POST" })
       name: data.name,
       description: data.description,
       priority: data.priority,
-      conditions: data.conditions,
-      actions: data.actions,
+      conditions: data.conditions as Json,
+      actions: data.actions as Json,
       effective_from: data.effectiveFrom,
       effective_to: data.effectiveTo,
       active: data.active,
     };
 
     const query = data.id
-      ? context.supabase.from("finance_rules").update(row).eq("id", data.id)
-      : context.supabase.from("finance_rules").insert(row);
+      ? context.supabase.from("finance_rules").update(row as never).eq("id", data.id)
+      : context.supabase.from("finance_rules").insert(row as never);
     const { error } = await query;
     if (error) {
       if (error.code === "23505") throw new Error("A rule with that name already exists here.");
@@ -347,7 +356,7 @@ export const deleteFinanceConfigRow = createServerFn({ method: "POST" })
         : data.kind === "rule"
           ? "finance_rules"
           : "finance_config_sections";
-    const { error } = await context.supabase.from(table).delete().eq("id", data.id);
+    const { error } = await context.supabase.from(table as never).delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -390,7 +399,7 @@ export const seedFinanceDefaults = createServerFn({ method: "POST" })
         })),
     );
     if (rows.length > 0) {
-      const { error } = await supabase.from("finance_reference_items").insert(rows);
+      const { error } = await supabase.from("finance_reference_items").insert(rows as never);
       if (error) throw new Error(error.message);
     }
 
@@ -418,7 +427,7 @@ export const seedFinanceDefaults = createServerFn({ method: "POST" })
         })),
     );
     if (sectionRows.length > 0) {
-      const { error } = await supabase.from("finance_config_sections").insert(sectionRows);
+      const { error } = await supabase.from("finance_config_sections").insert(sectionRows as never);
       if (error) throw new Error(error.message);
     }
 

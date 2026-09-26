@@ -43,7 +43,13 @@ export function useFinanceConfig(): ActiveFinanceConfig {
   useEffect(() => {
     let active = true;
     void load()
-      .then((r) => {
+      .then((res) => {
+        const r = res as {
+          schoolId: string | null;
+          settings: Record<string, Record<string, unknown>>;
+          items: ReferenceItem[];
+          rules: FinanceRule[];
+        };
         if (!active) return;
         setState({
           schoolId: r.schoolId ?? null,

@@ -446,7 +446,7 @@ function Field({
       {field.type === "textarea" ? (
         <Textarea id={id} rows={3} value={value} onChange={(e) => onChange(e.target.value)} />
       ) : field.type === "select" ? (
-        <Select value={value || undefined} onValueChange={onChange}>
+        <Select {...(value ? { value } : {})} onValueChange={onChange}>
           <SelectTrigger id={id}>
             <SelectValue placeholder="Choose…" />
           </SelectTrigger>

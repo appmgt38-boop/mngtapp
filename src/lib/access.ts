@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   UserCog,
   Archive,
+  Landmark,
   Settings2,
 } from "lucide-react";
 
@@ -282,6 +283,15 @@ export const MODULES: ModuleDef[] = [
     icon: Archive,
     category: "Administration",
     roles: ["super_admin"],
+  },
+  {
+    id: "financial-configuration",
+    name: "Financial Configuration",
+    description:
+      "The control plane for money: currency, fees, invoices, payments, payroll, budgets and the rules every financial module follows.",
+    icon: Landmark,
+    category: "Administration",
+    roles: ["super_admin", "school_manager"],
   },
   {
     id: "system-configuration",
