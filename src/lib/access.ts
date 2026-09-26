@@ -284,6 +284,15 @@ export const MODULES: ModuleDef[] = [
     roles: ["super_admin"],
   },
   {
+    id: "financial-configuration",
+    name: "Financial Configuration",
+    description:
+      "The control plane for money: currency, fees, invoices, payments, payroll, budgets and the rules every financial module follows.",
+    icon: Landmark,
+    category: "Administration",
+    roles: ["super_admin", "school_manager"],
+  },
+  {
     id: "system-configuration",
     name: "System Configuration",
     description: "School settings, terms, sessions and branding.",
