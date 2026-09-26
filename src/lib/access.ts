@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   UserCog,
   Archive,
+  Landmark,
   Settings2,
 } from "lucide-react";
 
